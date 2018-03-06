@@ -48,12 +48,8 @@ public class BackgroundService extends Service {
     private LocationRequest locationRequest;
     private Location location;
 
-    private String lastUpdateTime;
     private Boolean requestingLocationUpdates;
-    private static final int REQUEST_CHECK_SETTINGS = 0x1;
     private int priority = 0;
-    private TextView textView;
-    private String textLog;
 
     private Timer timer = null;
 
@@ -89,13 +85,13 @@ public class BackgroundService extends Service {
             public void run() {
                 i++;
                 Log.d("location", "latitude: "+location.getLatitude()+"  longitude: "+location.getLongitude());
-                if(i > 10){
+                if(i > 1){
                     stopLocationUpdates();
                     startActivity(new Intent(getApplicationContext(), AlarmActivity.class));
                     stopService(new Intent(getApplicationContext(), BackgroundService.class));
                 }
             }
-        }, 10000, 10000);
+        }, 60000, 60000);
 
         return START_STICKY;
     }
@@ -114,10 +110,7 @@ public class BackgroundService extends Service {
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 super.onLocationResult(locationResult);
-
                 location = locationResult.getLastLocation();
-
-                lastUpdateTime = DateFormat.getTimeInstance().format(new Date());
             }
         };
     }
@@ -158,7 +151,7 @@ public class BackgroundService extends Service {
         locationRequest.setInterval(60000);
         // このインターバル時間は正確です。これより早いアップデートはしません。
         // 単位：msec
-        locationRequest.setFastestInterval(5000);
+        locationRequest.setFastestInterval(60000);
 
     }
 
@@ -174,52 +167,36 @@ public class BackgroundService extends Service {
     // FusedLocationApiによるlocation updatesをリクエスト
     private void startLocationUpdates() {
         // Begin by checking if the device has the necessary location settings.
-        settingsClient.checkLocationSettings(locationSettingsRequest).addOnSuccessListener(new OnSuccessListener<LocationSettingsResponse>() {
-            @Override
-            public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
-                Log.i("debug", "All location settings are satisfied.");
+        settingsClient.checkLocationSettings(locationSettingsRequest).addOnSuccessListener((LocationSettingsResponse locationSettingsResponse) -> {
+            Log.i("debug", "All location settings are satisfied.");
 
-                // パーミッションの確認
-                if (ActivityCompat.checkSelfPermission(BackgroundService.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                        && ActivityCompat.checkSelfPermission(BackgroundService.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    // TODO: Consider calling
-                    //    ActivityCompat#requestPermissions
-                    // here to request the missing permissions, and then overriding
-                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                    //                                          int[] grantResults)
-                    // to handle the case where the user grants the permission. See the documentation
-                    // for ActivityCompat#requestPermissions for more details.
+            // パーミッションの確認
+            if (ActivityCompat.checkSelfPermission(BackgroundService.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    && ActivityCompat.checkSelfPermission(BackgroundService.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
 
-                    return;
-                }
-                fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.myLooper());
+                return;
             }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                int statusCode = ((ApiException) e).getStatusCode();
-                switch (statusCode) {
-                    case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-                        Log.i("debug", "Location settings are not satisfied. Attempting to upgrade " + "location settings ");
-//                                try {
-//                                    // Show the dialog by calling startResolutionForResult(), and check the
-//                                    // result in onActivityResult().
-//                                    ResolvableApiException rae = (ResolvableApiException) e;
-//                                    rae.startResolutionForResult(BackgroundService.this, REQUEST_CHECK_SETTINGS);
-//
-//                                } catch (IntentSender.SendIntentException sie) {
-//                                    Log.i("debug", "PendingIntent unable to execute request.");
-//                                }
-                        break;
-                    case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-                        String errorMessage = "Location settings are inadequate, and cannot be " +
-                                "fixed here. Fix in Settings.";
-                        Log.e("debug", errorMessage);
-                        Toast.makeText(BackgroundService.this, errorMessage, Toast.LENGTH_LONG).show();
+            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.myLooper());
+        }).addOnFailureListener((@NonNull Exception e) -> {
+            int statusCode = ((ApiException) e).getStatusCode();
+            switch (statusCode) {
+                case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                    Log.i("debug", "Location settings are not satisfied. Attempting to upgrade " + "location settings ");
+                    break;
+                case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                    String errorMessage = "Location settings are inadequate, and cannot be " +
+                            "fixed here. Fix in Settings.";
+                    Log.e("debug", errorMessage);
+                    Toast.makeText(BackgroundService.this, errorMessage, Toast.LENGTH_LONG).show();
 
-                        requestingLocationUpdates = false;
-                }
-
+                    requestingLocationUpdates = false;
             }
         });
 
@@ -227,17 +204,18 @@ public class BackgroundService extends Service {
     }
 
     private void stopLocationUpdates() {
-        textLog += "onStop()\n";
-        textView.setText(textLog);
-
         if (!requestingLocationUpdates) {
             Log.d("debug", "stopLocationUpdates: " + "updates never requested, no-op.");
 
             return;
         }
 
-        fusedLocationClient.removeLocationUpdates(locationCallback).addOnCompleteListener((@NonNull Task<Void> task) -> {
-                                requestingLocationUpdates = false;
-        });
+        fusedLocationClient.removeLocationUpdates(locationCallback).addOnCompleteListener((@NonNull Task<Void> task) -> requestingLocationUpdates = false);
+    }
+
+    private long getDistance(long lati1, long long1, long lati2, long long2){
+        long d = 0;
+
+        return 0;
     }
 }

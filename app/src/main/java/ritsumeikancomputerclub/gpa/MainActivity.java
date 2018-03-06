@@ -1,15 +1,11 @@
 package ritsumeikancomputerclub.gpa;
 
-import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -17,7 +13,10 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Toast;
+
+import org.json.JSONObject;
+
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
     private InputMethodManager inputMethodManager = null;
@@ -37,8 +36,11 @@ public class MainActivity extends AppCompatActivity {
         searchText.setOnKeyListener((View v, int keyCode, KeyEvent event) -> {
             // enter button is pushed
             if((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)){
-                //hide keyboard
+                // hide keyboard
                 inputMethodManager.hideSoftInputFromWindow(searchText.getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
+
+                ArrayList result = getApiResult(searchText.getText().toString());
+
                 return true;
             }
             return false;
@@ -59,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
+        // noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             startActivity(new Intent(getApplicationContext(), SettingActivity.class));
 
@@ -67,5 +69,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return false;
+    }
+
+    private ArrayList<JSONObject> getApiResult(String query){
+        ArrayList<JSONObject> result = new ArrayList<>();
+
+        return result;
     }
 }
