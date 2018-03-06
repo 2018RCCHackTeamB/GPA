@@ -1,4 +1,9 @@
 <resources>
     <string name="app_name">GPA</string>
-    <string name="action_settings">Settings</string>
+    <string name="action_settings">設定</string>
+    <string name="title_activity_alarm">AlarmActivity</string>
+    <string name="search_hint">〇〇駅</string>
+    <string name="title_activity_setting">SettingActivity</string>
+    <string name="stop_alarm">STOP</string>
+
 </resources>
