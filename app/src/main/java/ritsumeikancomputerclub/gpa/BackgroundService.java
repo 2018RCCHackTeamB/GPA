@@ -68,6 +68,9 @@ public class BackgroundService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         i = 0;
+        double testLati = 34.9800554;
+        double testLong = 135.9627596;
+
         startLocationUpdates();
         timer = new Timer(true);
         timer.schedule(new TimerTask() {
@@ -75,13 +78,14 @@ public class BackgroundService extends Service {
             public void run() {
                 i++;
                 Log.d("location", "latitude: "+location.getLatitude()+"  longitude: "+location.getLongitude());
-                if(i > 1){
+                Log.d("distance", String.valueOf(getDistance(location.getLatitude(), location.getLongitude(), testLati, testLong)));
+                if(i > 10){
                     stopLocationUpdates();
                     startActivity(new Intent(getApplicationContext(), AlarmActivity.class));
                     stopService(new Intent(getApplicationContext(), BackgroundService.class));
                 }
             }
-        }, 60000, 60000);
+        }, 10000, 10000);
 
         return START_STICKY;
     }
