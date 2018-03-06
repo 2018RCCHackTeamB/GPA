@@ -17,9 +17,15 @@ import android.widget.EditText;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+
+import io.realm.Realm;
+import io.realm.RealmResults;
 
 public class MainActivity extends AppCompatActivity {
     private InputMethodManager inputMethodManager = null;
+    private Realm realm;
+    private SpotModel[] spotModels = {};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,11 +37,20 @@ public class MainActivity extends AppCompatActivity {
         Button start = findViewById(R.id.button);
         start.setOnClickListener(view -> startService(new Intent(getApplicationContext(), BackgroundService.class)));
 
-        inputMethodManager =  (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+        realm = Realm.getDefaultInstance();
+        RealmResults<SpotModel> realmResults = realm.where(SpotModel.class).findAll();
+
+
+//        realmSampleMethod();
+//        spotModels = realmResults.toArray(new SpotModel[1]);
+//        Log.d("tag",spotModels[0].getUpdatedAt());
+
+
+        inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         EditText searchText = findViewById(R.id.editText);
         searchText.setOnKeyListener((View v, int keyCode, KeyEvent event) -> {
             // enter button is pushed
-            if((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)){
+            if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
                 // hide keyboard
                 inputMethodManager.hideSoftInputFromWindow(searchText.getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
 
@@ -45,6 +60,12 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        realm.close();
     }
 
     @Override
@@ -71,9 +92,30 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-    private ArrayList<JSONObject> getApiResult(String query){
+    private ArrayList<JSONObject> getApiResult(String query) {
         ArrayList<JSONObject> result = new ArrayList<>();
 
         return result;
     }
+
+    //realmのサンプルメソッド
+    public void realmSampleMethod() {
+
+        String updatedAtText  = android.text.format.DateFormat.format("yyyy-MM-dd-kk-mm-ss", Calendar.getInstance()).toString();
+
+        //データの新規登録
+        realm.beginTransaction();
+        SpotModel spot = realm.createObject(SpotModel.class); // 新たなオブジェクトを作成
+        spot.setUuId(1);
+        spot.setPrefectureId(0);
+        spot.setTransportId(0);
+        spot.setName("南草津");
+        spot.setLatitude(120.0f);
+        spot.setLongitude(40.0f);
+        spot.setUpdatedAt(updatedAtText);
+        realm.commitTransaction();
+
+    }
+
+
 }

@@ -16,11 +16,10 @@ public class SpotModel  extends RealmObject{
     public void setUuId(int uuId) { this.uuId = uuId; }
 
     public int getPrefectureId(){return prefectureId;}
-    public void setLevel(int prefectureId) { this.prefectureId = prefectureId ;}
+    public void setPrefectureId(int prefectureId) { this.prefectureId = prefectureId ;}
 
     public int getTransportId(){return transportId;}
     public void setTransportId(int transportId) { this.transportId = transportId; }
-
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
