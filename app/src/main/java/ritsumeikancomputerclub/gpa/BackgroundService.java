@@ -1,23 +1,18 @@
 package ritsumeikancomputerclub.gpa;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.Service;
 import android.content.Intent;
-import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.location.Location;
-import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -27,13 +22,8 @@ import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.google.android.gms.location.SettingsClient;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 
-import java.text.DateFormat;
-import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -213,9 +203,13 @@ public class BackgroundService extends Service {
         fusedLocationClient.removeLocationUpdates(locationCallback).addOnCompleteListener((@NonNull Task<Void> task) -> requestingLocationUpdates = false);
     }
 
-    private long getDistance(long lati1, long long1, long lati2, long long2){
-        long d = 0;
+    private double getDistance(double lati1, double long1, double lati2, double long2){
+        double radius = 6378137;
+        double latiDelta = Math.abs(lati1 - lati2) * (Math.PI/180);
+        double longDelta = ((long1 - long2 <= 180) ? Math.abs(long1 - long2) : Math.abs(2*Math.PI - (long1 - long2))) * (Math.PI/180);
 
-        return 0;
+        double theta = 2 * Math.asin(Math.sqrt(Math.sin(latiDelta/2)*Math.sin(latiDelta/2) + Math.cos(lati1)*Math.cos(lati2)*Math.sin(longDelta/2)*Math.sin(longDelta/2)));
+
+        return radius*theta;
     }
 }
