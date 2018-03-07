@@ -58,7 +58,6 @@ public class SearchActivity extends AppCompatActivity {
     }
 
     public void search(View v){
-        ArrayAdapter adapter = (ArrayAdapter)listView.getAdapter();
         String[] trainTextList = {"a","b","c","d","e","f"};
         String[] busTextList = {"g","h","i","j","k","l","m"};
 
