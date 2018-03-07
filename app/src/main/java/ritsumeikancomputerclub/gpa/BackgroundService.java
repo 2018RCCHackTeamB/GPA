@@ -290,7 +290,7 @@ public class BackgroundService extends Service {
         if(getDistance(location.getLatitude(), location.getLongitude(), goalLati, goalLong) < 1000) {
             stopLocationUpdates();
             startActivity(new Intent(getApplicationContext(), AlarmActivity.class));
-            stopService(new Intent(getApplicationContext(), BackgroundService.class));
+            removeAlarm(true);
         }
 
         timer = new Timer(true);
@@ -311,7 +311,7 @@ public class BackgroundService extends Service {
                 if(getDistance(location.getLatitude(), location.getLongitude(), goalLati, goalLong) < 1000) {
                     stopLocationUpdates();
                     startActivity(new Intent(getApplicationContext(), AlarmActivity.class));
-                    stopService(new Intent(getApplicationContext(), BackgroundService.class));
+                    removeAlarm(true);
                 }
             }
         }, 10000, 10000);

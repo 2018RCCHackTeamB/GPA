@@ -19,6 +19,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private SpotModel[] spotModels = {};
     private BackgroundService mService;
     private boolean serviceEnable = false;
+    private JSONObject goal = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,14 +73,20 @@ public class MainActivity extends AppCompatActivity {
                 button.setText("START");
                 bindService(intent, connection, Context.BIND_AUTO_CREATE);
             } else {
-                String goal = "南草津";
-                double latitude = 35;
-                double longitude = 135;
+                if (goal != null) {
+                    try {
+                        String goalName = goal.getString("name");
+                        double latitude = goal.getDouble("latitude");
+                        double longitude = goal.getDouble("longitude");
 
-                startService(intent);
-                serviceEnable = true;
-                button.setText("STOP");
-                mService.setAlarm(goal, latitude, longitude);
+                        startService(intent);
+                        serviceEnable = true;
+                        button.setText("STOP");
+                        mService.setAlarm(goalName, latitude, longitude);
+                    } catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }
             }
         });
 
@@ -158,10 +166,22 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<JSONObject> getApiResult(String query) {
         ArrayList<JSONObject> result = new ArrayList<>();
 
-        ApiClient client = new ApiClient();
+        ApiClient client = new ApiClient(query);
+        client.setListener(createListener());
         client.execute();
 
         return result;
+    }
+
+    private ApiClient.Listener createListener() {
+        return (String response) -> {
+            try {
+                goal = new JSONArray(response).getJSONObject(0);
+                Log.d("goal", goal.toString());
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+        };
     }
 
     //realmのサンプルメソッド
