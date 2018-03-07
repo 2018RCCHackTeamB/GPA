@@ -1,5 +1,6 @@
 package ritsumeikancomputerclub.gpa;
 
+import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -22,6 +23,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -31,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     private Realm realm;
     private SpotModel[] spotModels = {};
     private BackgroundService mService;
+    private boolean serviceEnable = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,15 +42,44 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        Button start = findViewById(R.id.button);
-        start.setOnClickListener(view -> {
-            double latitude = 35;
-            double longitude = 135;
+        ActivityManager am = (ActivityManager) this.getSystemService(ACTIVITY_SERVICE);
+        if (am != null) {
+            List<ActivityManager.RunningServiceInfo> serviceInfoList = am.getRunningServices(Integer.MAX_VALUE);
+            for(ActivityManager.RunningServiceInfo s : serviceInfoList){
+                if(s.service.getClassName().equals(BackgroundService.class.getName())){
+                    serviceEnable = true;
+                    break;
+                }
+            }
+        }
 
-            Intent intent = new Intent(getApplicationContext(), BackgroundService.class);
-            startService(intent);
-            bindService(intent, connection, Context.BIND_AUTO_CREATE);
-            mService.setGoalLocation(latitude, longitude);
+        Intent intent = new Intent(getApplicationContext(), BackgroundService.class);
+        bindService(intent, connection, Context.BIND_AUTO_CREATE);
+
+        Button button = findViewById(R.id.button);
+        if (serviceEnable){
+            button.setText("STOP");
+        } else {
+            button.setText("START");
+        }
+        button.setOnClickListener(view -> {
+            if (serviceEnable){
+                mService.removeAlarm(true);
+                unbindService(connection);
+                stopService(new Intent(getApplicationContext(), BackgroundService.class));
+                serviceEnable = false;
+                button.setText("START");
+                bindService(intent, connection, Context.BIND_AUTO_CREATE);
+            } else {
+                String goal = "南草津";
+                double latitude = 35;
+                double longitude = 135;
+
+                startService(intent);
+                serviceEnable = true;
+                button.setText("STOP");
+                mService.setAlarm(goal, latitude, longitude);
+            }
         });
 
         realm = Realm.getDefaultInstance();
@@ -79,6 +111,7 @@ public class MainActivity extends AppCompatActivity {
     public void onDestroy() {
         super.onDestroy();
         realm.close();
+        unbindService(connection);
     }
 
     @Override

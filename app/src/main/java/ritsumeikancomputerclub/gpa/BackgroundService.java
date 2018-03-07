@@ -1,6 +1,8 @@
 package ritsumeikancomputerclub.gpa;
 
 import android.Manifest;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -12,6 +14,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -46,6 +49,7 @@ public class BackgroundService extends Service {
 
     private Timer timer = null;
     private IBinder binder = new ServiceBinder();
+    private NotificationManager mNM;
     private double goalLati;
     private double goalLong;
 
@@ -61,7 +65,14 @@ public class BackgroundService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         // TODO: Return the communication channel to the service.
+
         return binder;
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent){
+        super.onUnbind(intent);
+        return true;
     }
 
     @Override
@@ -82,45 +93,45 @@ public class BackgroundService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null) {
-            goalLati = intent.getDoubleExtra("latitude", 0);
-            goalLong = intent.getDoubleExtra("longitude", 0);
-        }
-
-        if (goalLati == 0 && goalLong == 0){
-            stopService(new Intent(getApplicationContext(), BackgroundService.class));
-        }
-
-        startLocationUpdates();
-
-        if(getDistance(location.getLatitude(), location.getLongitude(), goalLati, goalLong) < 1000) {
-            stopLocationUpdates();
-            startActivity(new Intent(getApplicationContext(), AlarmActivity.class));
-            stopService(new Intent(getApplicationContext(), BackgroundService.class));
-        }
-
-        timer = new Timer(true);
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                //TODO: 位置情報オフの時にプッシュ通知で警告
-
-                if(location.getLatitude() == 0 && location.getLongitude() == 0) {
-                    createLocationCallback();
-                    createLocationRequest();
-                    buildLocationSettingsRequest();
-                    startLocationUpdates();
-                }
-
-                Log.d("location", "latitude: "+location.getLatitude()+"  longitude: "+location.getLongitude());
-                Log.d("distance", String.valueOf(getDistance(location.getLatitude(), location.getLongitude(), goalLati, goalLong)));
-                if(getDistance(location.getLatitude(), location.getLongitude(), goalLati, goalLong) < 1000) {
-                    stopLocationUpdates();
-                    startActivity(new Intent(getApplicationContext(), AlarmActivity.class));
-                    stopService(new Intent(getApplicationContext(), BackgroundService.class));
-                }
-            }
-        }, 10000, 10000);
+//        if (intent != null) {
+//            goalLati = intent.getDoubleExtra("latitude", 0);
+//            goalLong = intent.getDoubleExtra("longitude", 0);
+//        }
+//
+//        if (goalLati == 0 && goalLong == 0){
+//            stopService(new Intent(getApplicationContext(), BackgroundService.class));
+//        }
+//
+//        startLocationUpdates();
+//
+//        if(getDistance(location.getLatitude(), location.getLongitude(), goalLati, goalLong) < 1000) {
+//            stopLocationUpdates();
+//            startActivity(new Intent(getApplicationContext(), AlarmActivity.class));
+//            stopService(new Intent(getApplicationContext(), BackgroundService.class));
+//        }
+//
+//        timer = new Timer(true);
+//        timer.schedule(new TimerTask() {
+//            @Override
+//            public void run() {
+//                //TODO: 位置情報オフの時にプッシュ通知で警告
+//
+//                if(location.getLatitude() == 0 && location.getLongitude() == 0) {
+//                    createLocationCallback();
+//                    createLocationRequest();
+//                    buildLocationSettingsRequest();
+//                    startLocationUpdates();
+//                }
+//
+//                Log.d("location", "latitude: "+location.getLatitude()+"  longitude: "+location.getLongitude());
+//                Log.d("distance", String.valueOf(getDistance(location.getLatitude(), location.getLongitude(), goalLati, goalLong)));
+//                if(getDistance(location.getLatitude(), location.getLongitude(), goalLati, goalLong) < 1000) {
+//                    stopLocationUpdates();
+//                    startActivity(new Intent(getApplicationContext(), AlarmActivity.class));
+//                    stopService(new Intent(getApplicationContext(), BackgroundService.class));
+//                }
+//            }
+//        }, 10000, 10000);
 
         return START_STICKY_COMPATIBILITY;
     }
@@ -257,8 +268,58 @@ public class BackgroundService extends Service {
         return loc;
     }
 
-    void setGoalLocation(double lati, double longi){
+    void setAlarm(String name, double lati, double longi){
         goalLati = lati;
         goalLong = longi;
+
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+        // サービスを永続化するために、通知を作成する
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext());
+        builder.setContentIntent(pendingIntent);
+        builder.setContentTitle("アラーム設定中");
+        builder.setContentText("目的地： " + name);
+        builder.setSmallIcon(android.R.drawable.ic_dialog_info);
+        mNM = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        mNM.notify(1, builder.build());
+        // サービス永続化
+        startForeground(1, builder.build());
+
+        startLocationUpdates();
+
+        if(getDistance(location.getLatitude(), location.getLongitude(), goalLati, goalLong) < 1000) {
+            stopLocationUpdates();
+            startActivity(new Intent(getApplicationContext(), AlarmActivity.class));
+            stopService(new Intent(getApplicationContext(), BackgroundService.class));
+        }
+
+        timer = new Timer(true);
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                //TODO: 位置情報オフの時にプッシュ通知で警告
+
+                if(location.getLatitude() == 0 && location.getLongitude() == 0) {
+                    createLocationCallback();
+                    createLocationRequest();
+                    buildLocationSettingsRequest();
+                    startLocationUpdates();
+                }
+
+                Log.d("location", "latitude: "+location.getLatitude()+"  longitude: "+location.getLongitude());
+                Log.d("distance", String.valueOf(getDistance(location.getLatitude(), location.getLongitude(), goalLati, goalLong)));
+                if(getDistance(location.getLatitude(), location.getLongitude(), goalLati, goalLong) < 1000) {
+                    stopLocationUpdates();
+                    startActivity(new Intent(getApplicationContext(), AlarmActivity.class));
+                    stopService(new Intent(getApplicationContext(), BackgroundService.class));
+                }
+            }
+        }, 10000, 10000);
+    }
+
+    void removeAlarm(boolean removeNotify){
+        stopForeground(removeNotify);
+        stopSelf();
+        //stopService(new Intent(getApplicationContext(), BackgroundService.class));
     }
 }
