@@ -5,5 +5,7 @@
     <string name="search_hint">〇〇駅</string>
     <string name="title_activity_setting">SettingActivity</string>
     <string name="stop_alarm">STOP</string>
+    <string name="start_alarm">START</string>
+
 
 </resources>
