@@ -1,8 +1,12 @@
 package ritsumeikancomputerclub.gpa;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -26,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
     private InputMethodManager inputMethodManager = null;
     private Realm realm;
     private SpotModel[] spotModels = {};
+    private BackgroundService mService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,7 +40,15 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         Button start = findViewById(R.id.button);
-        start.setOnClickListener(view -> startService(new Intent(getApplicationContext(), BackgroundService.class)));
+        start.setOnClickListener(view -> {
+            double latitude = 35;
+            double longitude = 135;
+
+            Intent intent = new Intent(getApplicationContext(), BackgroundService.class);
+            startService(intent);
+            bindService(intent, connection, Context.BIND_AUTO_CREATE);
+            mService.setGoalLocation(latitude, longitude);
+        });
 
         realm = Realm.getDefaultInstance();
         RealmResults<SpotModel> realmResults = realm.where(SpotModel.class).findAll();
@@ -92,8 +105,28 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
+    // コネクション作成
+    private ServiceConnection connection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            // サービス接続時に呼ばれる
+            Log.i("ServiceConnection", "onServiceConnected");
+            // BinderからServiceのインスタンスを取得
+            mService = ((BackgroundService.ServiceBinder)service).getService();
+        }
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            // サービス切断時に呼ばれる
+            Log.i("ServiceConnection", "onServiceDisconnected");
+            mService = null;
+        }
+    };
+
     private ArrayList<JSONObject> getApiResult(String query) {
         ArrayList<JSONObject> result = new ArrayList<>();
+
+        ApiClient client = new ApiClient();
+        client.execute();
 
         return result;
     }
@@ -110,8 +143,8 @@ public class MainActivity extends AppCompatActivity {
         spot.setPrefectureId(0);
         spot.setTransportId(0);
         spot.setName("南草津");
-        spot.setLatitude(120.0f);
-        spot.setLongitude(40.0f);
+        spot.setLatitude(40.0f);
+        spot.setLongitude(130.0f);
         spot.setUpdatedAt(updatedAtText);
         realm.commitTransaction();
 

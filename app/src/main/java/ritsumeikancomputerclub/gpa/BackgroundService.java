@@ -5,6 +5,9 @@ import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.location.LocationManager;
+import android.location.LocationProvider;
+import android.os.Binder;
 import android.os.IBinder;
 import android.os.Looper;
 import android.support.annotation.NonNull;
@@ -36,12 +39,21 @@ public class BackgroundService extends Service {
     private LocationSettingsRequest locationSettingsRequest;
     private LocationCallback locationCallback;
     private LocationRequest locationRequest;
-    private Location location;
+    private Location location = new Location(LocationManager.GPS_PROVIDER);
 
     private Boolean requestingLocationUpdates;
     private int priority = 0;
 
     private Timer timer = null;
+    private IBinder binder = new ServiceBinder();
+    private double goalLati;
+    private double goalLong;
+
+    public class ServiceBinder extends Binder{
+        BackgroundService getService(){
+            return BackgroundService.this;
+        }
+    }
 
     public BackgroundService() {
     }
@@ -49,7 +61,7 @@ public class BackgroundService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         // TODO: Return the communication channel to the service.
-        throw new UnsupportedOperationException("Not yet implemented");
+        return binder;
     }
 
     @Override
@@ -58,28 +70,51 @@ public class BackgroundService extends Service {
         settingsClient = LocationServices.getSettingsClient(this);
 
         priority = 0;
+        location.setLatitude(0);
+        location.setLongitude(0);
+        goalLati = 0;
+        goalLong = 0;
 
         createLocationCallback();
         createLocationRequest();
         buildLocationSettingsRequest();
     }
 
-    private int i;
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        i = 0;
-        double testLati = 34.9800554;
-        double testLong = 135.9627596;
+        if (intent != null) {
+            goalLati = intent.getDoubleExtra("latitude", 0);
+            goalLong = intent.getDoubleExtra("longitude", 0);
+        }
+
+        if (goalLati == 0 && goalLong == 0){
+            stopService(new Intent(getApplicationContext(), BackgroundService.class));
+        }
 
         startLocationUpdates();
+
+        if(getDistance(location.getLatitude(), location.getLongitude(), goalLati, goalLong) < 1000) {
+            stopLocationUpdates();
+            startActivity(new Intent(getApplicationContext(), AlarmActivity.class));
+            stopService(new Intent(getApplicationContext(), BackgroundService.class));
+        }
+
         timer = new Timer(true);
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                i++;
+                //TODO: 位置情報オフの時にプッシュ通知で警告
+
+                if(location.getLatitude() == 0 && location.getLongitude() == 0) {
+                    createLocationCallback();
+                    createLocationRequest();
+                    buildLocationSettingsRequest();
+                    startLocationUpdates();
+                }
+
                 Log.d("location", "latitude: "+location.getLatitude()+"  longitude: "+location.getLongitude());
-                Log.d("distance", String.valueOf(getDistance(location.getLatitude(), location.getLongitude(), testLati, testLong)));
-                if(i > 10){
+                Log.d("distance", String.valueOf(getDistance(location.getLatitude(), location.getLongitude(), goalLati, goalLong)));
+                if(getDistance(location.getLatitude(), location.getLongitude(), goalLati, goalLong) < 1000) {
                     stopLocationUpdates();
                     startActivity(new Intent(getApplicationContext(), AlarmActivity.class));
                     stopService(new Intent(getApplicationContext(), BackgroundService.class));
@@ -87,7 +122,7 @@ public class BackgroundService extends Service {
             }
         }, 10000, 10000);
 
-        return START_STICKY;
+        return START_STICKY_COMPATIBILITY;
     }
 
     @Override
@@ -208,12 +243,22 @@ public class BackgroundService extends Service {
     }
 
     private double getDistance(double lati1, double long1, double lati2, double long2){
-        double radius = 6378137;
+        double radius = 6367444;
         double latiDelta = Math.abs(lati1 - lati2) * (Math.PI/180);
         double longDelta = ((long1 - long2 <= 180) ? Math.abs(long1 - long2) : Math.abs(2*Math.PI - (long1 - long2))) * (Math.PI/180);
 
         double theta = 2 * Math.asin(Math.sqrt(Math.sin(latiDelta/2)*Math.sin(latiDelta/2) + Math.cos(lati1)*Math.cos(lati2)*Math.sin(longDelta/2)*Math.sin(longDelta/2)));
 
         return radius*theta;
+    }
+
+    double[] getGoalLocation(){
+        double[] loc = {goalLati, goalLong};
+        return loc;
+    }
+
+    void setGoalLocation(double lati, double longi){
+        goalLati = lati;
+        goalLong = longi;
     }
 }
